@@ -101,7 +101,7 @@ func ProveWNLA(public *WeightNormLinearPublic, Com *bn256.G1, fs FiatShamirEngin
 	mu2 := mul(public.Mu, public.Mu)
 
 	vx := add(
-		mul(weightVectorMul(n0, n1, mu2), mul(big.NewInt(2), roinv)),
+		mul(weightVectorMul(n0, n1, mu2), mul(bint(2), roinv)),
 		add(vectorMul(c0, l1), vectorMul(c1, l0)),
 	)
 
@@ -135,17 +135,19 @@ func ProveWNLA(public *WeightNormLinearPublic, Com *bn256.G1, fs FiatShamirEngin
 	l_ := vectorAdd(l0, vectorMulOnScalar(l1, y))
 	n_ := vectorAdd(vectorMulOnScalar(n0, roinv), vectorMulOnScalar(n1, y))
 
+	public_ := &WeightNormLinearPublic{
+		G:    public.G,
+		GVec: G_,
+		HVec: H_,
+		C:    c_,
+		Ro:   public.Mu,
+		Mu:   mu2,
+	}
+
 	// Recursive run
 	res := ProveWNLA(
-		&WeightNormLinearPublic{
-			G:    public.G,
-			GVec: G_,
-			HVec: H_,
-			C:    c_,
-			Ro:   public.Mu,
-			Mu:   mu2,
-		},
-		public.Commit(l_, n_),
+		public_,
+		public_.Commit(l_, n_),
 		fs,
 		l_,
 		n_,
