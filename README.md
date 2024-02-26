@@ -2,6 +2,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Example
+Explore the [circuit_test.go](./circuit_test.go) to check the example of circuit prove and verification.
+It uses the simple schema to prove that we know such `p` and `q` that `p*q=r` for some public `r`.
+
+This example is presented in the BP form and translated into the BP++ form.
+
 ## Weight norm linear argument
 
 The [wnla.go](./wnla.go) contains the implementation of **weight norm linear argument** protocol. This is a fundamental
