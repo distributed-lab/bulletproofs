@@ -112,7 +112,7 @@ func TestArithmeticCircuit(t *testing.T) {
 
 	V := make([]*bn256.G1, public.K)
 	for i := range V {
-		V[i] = CommitCircuit(private.V[i], private.Sv[i], public.G, public.HVec)
+		V[i] = public.CommitCircuit(private.V[i], private.Sv[i])
 	}
 
 	proof := ProveCircuit(public, NewKeccakFS(), private)

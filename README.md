@@ -13,19 +13,21 @@ Check the following snippet with an example of WNLA usage:
 ```go
 package main
 
-import "math/big"
+import (
+	"github.com/distributed-lab/bulletproofs"
+	"math/big"
+)
 
 func main() {
-	public := NewWeightNormLinearPublic(4, 2)
+	public := bulletproofs.NewWeightNormLinearPublic(4, 2)
 
 	// Private
 	l := []*big.Int{big.NewInt(4), big.NewInt(5), big.NewInt(10), big.NewInt(1)}
 	n := []*big.Int{big.NewInt(2), big.NewInt(1)}
 
-	proof := ProveWNLA(public, public.Commit(l, n), NewKeccakFS(), l, n)
-	if err := VerifyWNLA(public, proof, public.Commit(l, n), NewKeccakFS()); err != nil {
+	proof := bulletproofs.ProveWNLA(public, public.Commit(l, n), bulletproofs.NewKeccakFS(), l, n)
+	if err := bulletproofs.VerifyWNLA(public, proof, public.Commit(l, n), bulletproofs.NewKeccakFS()); err != nil {
 		panic(err)
-
 	}
 }
 
@@ -37,11 +39,17 @@ It runs the WNLA protocol as the final stages of proving/verification. Uses the 
 and make protocol non-interactive.
 
 Check the following snippet with an example of arithmetic circuit protocol usage:
+
 ```go
 package main
 
+import (
+	"github.com/cloudflare/bn256"
+	"github.com/distributed-lab/bulletproofs"
+)
+
 func main() {
-	public := &ArithmeticCircuitPublic{
+	public := &bulletproofs.ArithmeticCircuitPublic{
 		Nm,
 		Nl, // Nl = Nv * K
 		Nv, // Size on any v witness vector
@@ -51,9 +59,9 @@ func main() {
 		G,
 
 		// points that will be used directly in circuit protocol
-		GVec[:Nm], // Nm
+		GVec[:Nm],   // Nm
 		HVec[:Nv+9], // Nv+9
-		
+
 		// Circuit definition 
 		Wm, // Nm * Nw
 		Wl, // Nl * Nw
@@ -61,20 +69,20 @@ func main() {
 		Al, // Nl
 		Fl,
 		Fm,
-		
+
 		// Partition function
-		F: func(typ PartitionType, index int) *int {
+		F: func(typ bulletproofs.PartitionType, index int) *int {
 			// define
 			return nil
 		},
 
 		// points that will be used in WNLA protocol to make vectors 2^n len
 		HVec[Nv+9:], // 2^x - (Nv+9) dimension
-		GVec[Nm:], // 2^y - Nm dimension
+		GVec[Nm:],   // 2^y - Nm dimension
 	}
 
-	private := &ArithmeticCircuitPrivate{
-		V, // witness vectors v, dimension k*Nv
+	private := &bulletproofs.ArithmeticCircuitPrivate{
+		V,  // witness vectors v, dimension k*Nv
 		Sv, // witness blinding values, dimension k
 		Wl, // Nm
 		Wr, // Nm
@@ -84,12 +92,12 @@ func main() {
 	// Commitments to the v witness vectors
 	V := make([]*bn256.G1, public.K)
 	for i := range V {
-		V[i] = CommitCircuit(private.V[i], private.Sv[i], public.G, public.HVec)
+		V[i] = public.CommitCircuit(private.V[i], private.Sv[i], public.G, public.HVec)
 	}
 
-	proof := ProveCircuit(public, NewKeccakFS(), private)
+	proof := bulletproofs.ProveCircuit(public, bulletproofs.NewKeccakFS(), private)
 
-	if err := VerifyCircuit(public, V, NewKeccakFS(), proof); err != nil {
+	if err := bulletproofs.VerifyCircuit(public, V, bulletproofs.NewKeccakFS(), proof); err != nil {
 		panic(err)
 	}
 }

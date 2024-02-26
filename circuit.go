@@ -11,10 +11,10 @@ import (
 
 // CommitCircuit creates a commitment for v vector and blinding s.
 // Com = v[0]*G + s*H[0] + <v[1:], H[9:]>
-func CommitCircuit(v []*big.Int, s *big.Int, G *bn256.G1, H []*bn256.G1) *bn256.G1 {
-	res := new(bn256.G1).ScalarMult(G, v[0])
-	res.Add(res, new(bn256.G1).ScalarMult(H[0], s))
-	res.Add(res, vectorPointScalarMul(H[9:], v[1:]))
+func (p *ArithmeticCircuitPublic) CommitCircuit(v []*big.Int, s *big.Int) *bn256.G1 {
+	res := new(bn256.G1).ScalarMult(p.G, v[0])
+	res.Add(res, new(bn256.G1).ScalarMult(p.HVec[0], s))
+	res.Add(res, vectorPointScalarMul(p.HVec[9:], v[1:]))
 	return res
 }
 
