@@ -68,14 +68,14 @@ func main() {
 			return nil
 		},
 
-		// points that will be used in wnla protocol to make vectors 2^n len
+		// points that will be used in WNLA protocol to make vectors 2^n len
 		HVec[Nv+9:], // 2^x - (Nv+9) dimension
 		GVec[Nm:], // 2^y - Nm dimension
 	}
 
 	private := &ArithmeticCircuitPrivate{
 		V, // witness vectors v, dimension k*Nv
-		Sv, // witness blinding values, dimensio k
+		Sv, // witness blinding values, dimension k
 		Wl, // Nm
 		Wr, // Nm
 		Wo, // No
