@@ -23,25 +23,41 @@ func TestArithmeticCircuit(t *testing.T) {
 
 	// Challenge x = 10
 
-	// Wl*w = M(Wl*al + Wr*ar + Wo*ao)
-	// fl*wv+al = v+al = -Wl*w = -M(Wl*al + Wr*ar + Wo*ao) = -M(Wv*v+c)
-	// v+al = -M*(Wv*v) - M*c
-	// if M such that -M(Wv*v) = v then al = -M*c
+	/*
+		// In the BP circuit representation:
+		al = [p]
+		ar = [q]
+		ao = [p * q]
+		v = [p, q]
 
-	// Corresponding matrix M such that -M(Wv*v) = v
-	m := []*big.Int{frac(3, 530), frac(5, 530)}
+		Wl = [x]
+		Wr = [x^2]
+		Wo = [x^3]
+		Wv = [x, x^2]
+		c = r * x^3
+
+		This satisfies
+		(1) Wl*al + Wr*ar + Wo*ao = Wv*v + c
+		(2) al ◦ ar = ao
+	*/
+
+	// Using M = [−p, −q] * (zp + z2q)^−1 (check out our paper why), we can calculate the BP++ representation:
+	// Wl*w = M(Wl*al + Wr*ar + Wo*ao)
+	// al = -m * c
+
+	// Matrix M such that -M(Wv*v) = v
+	m := vectorMulOnScalar([]*big.Int{bint(-3), bint(-5)}, inv(bint(30+500)))
 
 	al := vectorMulOnScalar(m, bint(-15*1000)) // -m * c = -m * (r * z^3)
 
-	// Wlw = M(Wl*al + Wr*ar + Wo*ao)
-	// Wl*al + Wr*ar + Wo*ao = -30 - 500 + 15000 = 14470
-	// M(Wl*al + Wr*ar + Wo*ao) = [1447/101, 14470/101]
+	// Wl*al + Wr*ar + Wo*ao = 30 + 500 + 15000 = 15530
+	Wlw := vectorMulOnScalar(m, bint(15530))
 
-	Wlw := vectorMulOnScalar(m, bint(14470)) // 2
-
+	// w = [3, 5, 15] = al|ar|ao
 	// left inverse w = [3/259, 5/259, 15/259]
-	wInv := []*big.Int{frac(3, 259), frac(5, 259), frac(15, 259)} // 3
+	wInv := []*big.Int{frac(3, 259), frac(5, 259), frac(15, 259)}
 
+	// Wl = Wl*w*w^-1
 	var Wl [][]*big.Int = make([][]*big.Int, 2)
 	for i := range Wl {
 		Wl[i] = make([]*big.Int, 3)
@@ -51,9 +67,11 @@ func TestArithmeticCircuit(t *testing.T) {
 		}
 	}
 
+	// Wm*w = wl*wr = al*ar
+	// => Wm = [0, 0, 1]
 	Wm := [][]*big.Int{
 		{bint(0), bint(0), bint(1)},
-	} // [0, 0, 1]
+	}
 
 	wnlaPublic := NewWeightNormLinearPublic(16, 1)
 
