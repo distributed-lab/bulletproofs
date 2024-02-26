@@ -1,3 +1,7 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
@@ -13,7 +17,8 @@ type FiatShamirEngine interface {
 }
 
 type KeccakFS struct {
-	state crypto.KeccakState
+	state   crypto.KeccakState
+	counter int
 }
 
 func NewKeccakFS() FiatShamirEngine {
@@ -33,6 +38,8 @@ func (k *KeccakFS) AddNumber(v *big.Int) {
 }
 
 func (k *KeccakFS) GetChallenge() *big.Int {
+	k.counter++
+	k.AddNumber(bint(k.counter))
 	return new(big.Int).Mod(new(big.Int).SetBytes(k.state.Sum(nil)), bn256.Order)
 }
 

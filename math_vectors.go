@@ -1,3 +1,7 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
@@ -6,6 +10,14 @@ import (
 )
 
 // For scalars *big.Int
+
+func zeroVector(n int) []*big.Int {
+	res := make([]*big.Int, n)
+	for i := range res {
+		res[i] = big.NewInt(0)
+	}
+	return res
+}
 
 func vectorAdd(a []*big.Int, b []*big.Int) []*big.Int {
 	for len(a) < len(b) {
@@ -19,6 +31,23 @@ func vectorAdd(a []*big.Int, b []*big.Int) []*big.Int {
 	res := make([]*big.Int, len(a))
 	for i := 0; i < len(res); i++ {
 		res[i] = add(a[i], b[i])
+	}
+
+	return res
+}
+
+func vectorSub(a []*big.Int, b []*big.Int) []*big.Int {
+	for len(a) < len(b) {
+		a = append(a, bint(0))
+	}
+
+	for len(b) < len(a) {
+		b = append(b, bint(0))
+	}
+
+	res := make([]*big.Int, len(a))
+	for i := 0; i < len(res); i++ {
+		res[i] = sub(a[i], b[i])
 	}
 
 	return res
@@ -106,5 +135,25 @@ func vectorPointMulOnScalar(g []*bn256.G1, a *big.Int) []*bn256.G1 {
 	for i := range res {
 		res[i] = new(bn256.G1).ScalarMult(g[i], a)
 	}
+	return res
+}
+
+func vectorTensorMul(a, b []*big.Int) []*big.Int {
+	res := make([]*big.Int, 0, len(a)*len(b))
+
+	for i := range b {
+		res = append(res, vectorMulOnScalar(a, b[i])...)
+	}
+	return res
+}
+
+func e(v *big.Int, a int) []*big.Int {
+	val := bint(1)
+	res := make([]*big.Int, a)
+	for i := range res {
+		res[i] = val
+		val = mul(val, v)
+	}
+
 	return res
 }

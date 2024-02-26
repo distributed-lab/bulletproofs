@@ -30,3 +30,67 @@ func main() {
 }
 
 ```
+
+## Arithmetic circuit
+The [circuit.go](./circuit.go) contains the implementation of BP++ arithmetic circuit protocol. 
+It runs the WNLA protocol as the final stages of proving/verification. Uses the Fiat-Shamir heuristics from [fs.go](./fs.go) to generate challenges
+and make protocol non-interactive.
+
+Check the following snippet with an example of arithmetic circuit protocol usage:
+```go
+package main
+
+func main() {
+	public := &ArithmeticCircuitPublic{
+		Nm,
+		Nl, // Nl = Nv * K
+		Nv, // Size on any v witness vector
+		Nw, // Nw = Nm + Nm + No
+		No,
+		K, // count of v witnesses vectors
+		G,
+
+		// points that will be used directly in circuit protocol
+		GVec[:Nm], // Nm
+		HVec[:Nv+9], // Nv+9
+		
+		// Circuit definition 
+		Wm, // Nm * Nw
+		Wl, // Nl * Nw
+		Am, // Nm
+		Al, // Nl
+		Fl,
+		Fm,
+		
+		// Partition function
+		F: func(typ PartitionType, index int) *int {
+			// define
+			return nil
+		},
+
+		// points that will be used in wnla protocol to make vectors 2^n len
+		HVec[Nv+9:], // 2^x - (Nv+9) dimension
+		GVec[Nm:], // 2^y - Nm dimension
+	}
+
+	private := &ArithmeticCircuitPrivate{
+		V, // witness vectors v, dimension k*Nv
+		Sv, // witness blinding values, dimensio k
+		Wl, // Nm
+		Wr, // Nm
+		Wo, // No
+	}
+
+	// Commitments to the v witness vectors
+	V := make([]*bn256.G1, public.K)
+	for i := range V {
+		V[i] = CommitCircuit(private.V[i], private.Sv[i], public.G, public.HVec)
+	}
+
+	proof := ProveCircuit(public, NewKeccakFS(), private)
+
+	if err := VerifyCircuit(public, V, NewKeccakFS(), proof); err != nil {
+		panic(err)
+	}
+}
+```

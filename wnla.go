@@ -1,3 +1,7 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
@@ -7,10 +11,10 @@ import (
 	"math/big"
 )
 
-// Commit creates a commitment for vectors n, l based on public parameters p.
+// CommitWNLA creates a commitment for vectors n, l based on public parameters p.
 // Commit(l, n) = v*G + <l, H> + <n, G>
 // where v = <c, l> + |n^2|_mu
-func (p *WeightNormLinearPublic) Commit(l []*big.Int, n []*big.Int) *bn256.G1 {
+func (p *WeightNormLinearPublic) CommitWNLA(l []*big.Int, n []*big.Int) *bn256.G1 {
 	v_ := add(vectorMul(p.C, l), weightVectorMul(n, n, p.Mu))
 	C := new(bn256.G1).ScalarMult(p.G, v_)
 	C.Add(C, vectorPointScalarMul(p.HVec, l))
@@ -26,7 +30,7 @@ func VerifyWNLA(public *WeightNormLinearPublic, proof *WeightNormLinearArgumentP
 	}
 
 	if len(proof.X) == 0 {
-		if !bytes.Equal(public.Commit(proof.L, proof.N).Marshal(), Com.Marshal()) {
+		if !bytes.Equal(public.CommitWNLA(proof.L, proof.N).Marshal(), Com.Marshal()) {
 			return errors.New("failed to verify proof")
 		}
 
@@ -77,7 +81,8 @@ func VerifyWNLA(public *WeightNormLinearPublic, proof *WeightNormLinearArgumentP
 }
 
 // ProveWNLA generates zero knowledge proof of knowledge of two vectors l and n that
-// satisfies the commitment C (see WeightNormLinearPublic.Commit() function)
+// satisfies the commitment C (see WeightNormLinearPublic.Commit() function).
+// Use empty FiatShamirEngine for call.
 func ProveWNLA(public *WeightNormLinearPublic, Com *bn256.G1, fs FiatShamirEngine, l, n []*big.Int) *WeightNormLinearArgumentProof {
 	if len(l)+len(n) < 6 {
 		// Prover sends l, n to Verifier
@@ -147,7 +152,7 @@ func ProveWNLA(public *WeightNormLinearPublic, Com *bn256.G1, fs FiatShamirEngin
 	// Recursive run
 	res := ProveWNLA(
 		public_,
-		public_.Commit(l_, n_),
+		public_.CommitWNLA(l_, n_),
 		fs,
 		l_,
 		n_,

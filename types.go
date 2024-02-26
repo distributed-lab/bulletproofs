@@ -1,10 +1,60 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
-	"crypto/rand"
 	"github.com/cloudflare/bn256"
 	"math/big"
 )
+
+type PartitionType int
+
+const (
+	PartitionLO PartitionType = iota
+	PartitionLL
+	PartitionLR
+	PartitionNO
+)
+
+type PartitionF = func(typ PartitionType, index int) *int
+
+type ArithmeticCircuitPublic struct {
+	Nm, Nl, Nv, Nw, No int // Nw = Nm + Nm + No (for L, R, O parts), Nl = Nv * K
+	K                  int // Count of witness vectors v.
+	G                  *bn256.G1
+	GVec               []*bn256.G1 // Nm
+	HVec               []*bn256.G1 // Nv+9
+
+	Wm [][]*big.Int // Nm * Nw
+	Wl [][]*big.Int // Nl * Nw
+
+	Am []*big.Int // Nm
+	Al []*big.Int // Nl
+
+	Fl bool
+	Fm bool
+
+	F PartitionF
+
+	// Vectors of points that will be used in WNLA protocol
+	GVec_ []*bn256.G1 // 2^n - Nm
+	HVec_ []*bn256.G1 // 2^n - (Nv+9)
+}
+
+type ArithmeticCircuitPrivate struct {
+	V  [][]*big.Int // k*Nv
+	Sv []*big.Int   // k
+	Wl []*big.Int   // Nm
+	Wr []*big.Int   // Nm
+	Wo []*big.Int   // No
+}
+
+type ArithmeticCircuitProof struct {
+	CL, CR, CO, CS *bn256.G1
+	WNLA           *WeightNormLinearArgumentProof
+}
 
 // WeightNormLinearArgumentProof contains the proof of knowledge of vectors L, N for corresponding commitment C (is not
 // included into the proof structure).
@@ -23,39 +73,25 @@ type WeightNormLinearPublic struct {
 }
 
 func NewWeightNormLinearPublic(lLen int, nLen int) *WeightNormLinearPublic {
-	_, g, err := bn256.RandomG1(rand.Reader)
-	if err != nil {
-		panic(err)
-	}
-
 	gvec := make([]*bn256.G1, nLen)
 	for i := range gvec {
-		if _, gvec[i], err = bn256.RandomG1(rand.Reader); err != nil {
-			panic(err)
-		}
+		gvec[i] = MustRandPoint()
 	}
 
 	hvec := make([]*bn256.G1, lLen)
 	for i := range hvec {
-		if _, hvec[i], err = bn256.RandomG1(rand.Reader); err != nil {
-			panic(err)
-		}
+		hvec[i] = MustRandPoint()
 	}
 
 	c := make([]*big.Int, lLen)
 	for i := range c {
-		if c[i], err = rand.Int(rand.Reader, bn256.Order); err != nil {
-			panic(err)
-		}
+		c[i] = MustRandScalar()
 	}
 
-	ro, err := rand.Int(rand.Reader, bn256.Order)
-	if err != nil {
-		panic(err)
-	}
+	ro := MustRandScalar()
 
 	return &WeightNormLinearPublic{
-		G:    g,
+		G:    MustRandPoint(),
 		GVec: gvec,
 		HVec: hvec,
 		C:    c,

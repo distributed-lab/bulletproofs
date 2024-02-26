@@ -1,3 +1,7 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
@@ -5,12 +9,40 @@ import (
 	"math/big"
 )
 
+func pow(x *big.Int, y int) *big.Int {
+	if y < 0 {
+		return new(big.Int).Exp(inv(x), big.NewInt(-int64(y)), bn256.Order)
+	}
+
+	return new(big.Int).Exp(x, big.NewInt(int64(y)), bn256.Order)
+}
+
 func inv(x *big.Int) *big.Int {
 	return new(big.Int).ModInverse(x, bn256.Order)
 }
 
+func minus(x *big.Int) *big.Int {
+	return sub(bint(0), x)
+}
+
+func powerOfTwo(x int) (p2 int) {
+	p2 = 1
+	for p2 < x {
+		p2 *= 2
+	}
+	return
+}
+
 func bint(v int) *big.Int {
 	return new(big.Int).Mod(new(big.Int).SetInt64(int64(v)), bn256.Order)
+}
+
+func bbool(v bool) *big.Int {
+	if v {
+		return bint(1)
+	}
+
+	return bint(0)
 }
 
 func zeroIfNil(x *big.Int) *big.Int {
