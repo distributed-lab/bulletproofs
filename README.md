@@ -3,10 +3,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Example
-Explore the [circuit_test.go](./circuit_test.go) to check the example of circuit prove and verification.
-It uses the simple schema to prove that we know such `p` and `q` that `p*q=r` for some public `r`.
 
-This example is presented in the BP form and translated into the BP++ form.
+Explore the [circuit_test.go](./circuit_test.go) to check the examples of circuit prove and verification.
+It contains two schemas:
+
+- Prove that we know such `p` and `q` that `p*q=r` for some public `r`. This example is presented in the BP form and
+  translated into the BP++ form according to our paper.
+- Prove that we know such `x, y` that `x+y=r` and `x*y=z` for public `r, z`. This example encoded directly into the BP++
+  circuits.
 
 ## Weight norm linear argument
 
@@ -40,8 +44,10 @@ func main() {
 ```
 
 ## Arithmetic circuit
-The [circuit.go](./circuit.go) contains the implementation of BP++ arithmetic circuit protocol. 
-It runs the WNLA protocol as the final stages of proving/verification. Uses the Fiat-Shamir heuristics from [fs.go](./fs.go) to generate challenges
+
+The [circuit.go](./circuit.go) contains the implementation of BP++ arithmetic circuit protocol.
+It runs the WNLA protocol as the final stages of proving/verification. Uses the Fiat-Shamir heuristics
+from [fs.go](./fs.go) to generate challenges
 and make protocol non-interactive.
 
 Check the following snippet with an example of arithmetic circuit protocol usage:

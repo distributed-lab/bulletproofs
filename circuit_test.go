@@ -5,6 +5,7 @@
 package bulletproofs
 
 import (
+	"fmt"
 	"github.com/cloudflare/bn256"
 	"github.com/davecgh/go-spew/spew"
 	"math/big"
@@ -108,6 +109,99 @@ func TestArithmeticCircuit(t *testing.T) {
 		Wl: []*big.Int{p},
 		Wr: []*big.Int{q},
 		Wo: []*big.Int{mul(p, q)},
+	}
+
+	V := make([]*bn256.G1, public.K)
+	for i := range V {
+		V[i] = public.CommitCircuit(private.V[i], private.Sv[i])
+	}
+
+	proof := ProveCircuit(public, NewKeccakFS(), private)
+	spew.Dump(proof)
+
+	if err := VerifyCircuit(public, V, NewKeccakFS(), proof); err != nil {
+		panic(err)
+	}
+}
+
+func TestArithmeticCircuit2(t *testing.T) {
+	// Test the knowledge of x, y for public z, r, such:
+	// x + y = r
+	// x * y = z
+
+	x := bint(3)
+	y := bint(5)
+
+	r := bint(8)
+	z := bint(15)
+
+	wl := []*big.Int{x}
+	wr := []*big.Int{y}
+	wo := []*big.Int{z, r}
+
+	wv := []*big.Int{x, y}
+	w := []*big.Int{x, y, z, r} // w = wl||wr||wo
+
+	Nm := 1
+	No := 2
+	Nv := 2
+	K := 1
+
+	Nl := Nv * K       // 2
+	Nw := Nm + Nm + No // 4
+
+	Wm := [][]*big.Int{{bint(0), bint(0), bint(1), bint(0)}} // Nm*Nw
+	Am := []*big.Int{bint(0)}                                // Nm
+
+	Wl := [][]*big.Int{
+		{bint(0), bint(1), bint(0), bint(0)},
+		{bint(1), bint(0), bint(0), bint(-1)},
+	} // Nl*Nw
+
+	Al := []*big.Int{minus(r), bint(0)} // Nl
+
+	fmt.Println("Circuit check:", vectorMul(Wm[0], w), "=", vectorMul(wl, wr))
+	fmt.Println("Circuit check:", vectorAdd(vectorAdd([]*big.Int{vectorMul(Wl[0], w), vectorMul(Wl[1], w)}, wv), Al), "= 0")
+
+	wnla := NewWeightNormLinearPublic(16, 1)
+
+	public := &ArithmeticCircuitPublic{
+		Nm: Nm,
+		Nl: Nl,
+		Nv: Nv,
+		Nw: Nw,
+		No: No,
+		K:  K,
+
+		G:    wnla.G,
+		GVec: wnla.GVec[:Nm],
+		HVec: wnla.HVec[:9+Nv],
+
+		Wm: Wm,
+		Wl: Wl,
+		Am: Am,
+		Al: Al,
+		Fl: true,
+		Fm: false,
+
+		F: func(typ PartitionType, index int) *int {
+			if typ == PartitionLL { // map all to no
+				return &index
+			}
+
+			return nil
+		},
+
+		GVec_: wnla.GVec[Nm:],
+		HVec_: wnla.HVec[9+Nv:],
+	}
+
+	private := &ArithmeticCircuitPrivate{
+		V:  [][]*big.Int{wv},
+		Sv: []*big.Int{MustRandScalar()},
+		Wl: wl,
+		Wr: wr,
+		Wo: wo,
 	}
 
 	V := make([]*bn256.G1, public.K)
