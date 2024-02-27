@@ -5,12 +5,13 @@
 ## Example
 
 Explore the [circuit_test.go](./circuit_test.go) to check the examples of circuit prove and verification.
-It contains two schemas:
+It contains several circuits:
 
 - Prove that we know such `p` and `q` that `p*q=r` for some public `r`. This example is presented in the BP form and
   translated into the BP++ form according to our paper.
 - Prove that we know such `x, y` that `x+y=r` and `x*y=z` for public `r, z`. This example encoded directly into the BP++
   circuits.
+- Prove the range for 4-bits value: `x` is in `[0..2^n)` range.
 
 ## Weight norm linear argument
 
