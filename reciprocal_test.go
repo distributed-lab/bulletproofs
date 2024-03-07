@@ -1,3 +1,7 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
@@ -53,9 +57,9 @@ func TestReciprocalRangeProofUInt64(t *testing.T) {
 
 	V := public.CommitCircuit(private.V, private.Sv)
 
-	proof := ProveReciprocal(public, V, NewKeccakFS(), private)
+	proof := ProveRange(public, V, NewKeccakFS(), private)
 
-	if err := VerifyReciprocal(public, V, NewKeccakFS(), proof); err != nil {
+	if err := VerifyRange(public, V, NewKeccakFS(), proof); err != nil {
 		panic(err)
 	}
 }

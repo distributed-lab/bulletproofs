@@ -1,3 +1,7 @@
+// Package bulletproofs
+// Copyright 2024 Distributed Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package bulletproofs
 
 import (
@@ -14,7 +18,9 @@ func (p *ReciprocalPublic) CommitCircuit(v []*big.Int, s *big.Int) *bn256.G1 {
 	return res
 }
 
-func ProveReciprocal(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, private *ReciprocalPrivate) *ReciprocalProof {
+// ProveRange generates zero knowledge proof that corresponding to the committed digits vector value lies in [0, 2^n) range.
+// Use empty FiatShamirEngine for call.
+func ProveRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, private *ReciprocalPrivate) *ReciprocalProof {
 	fs.AddPoint(V)
 
 	e := fs.GetChallenge()
@@ -125,7 +131,9 @@ func ProveReciprocal(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine,
 	}
 }
 
-func VerifyReciprocal(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, proof *ReciprocalProof) error {
+// VerifyRange verifies BP++ reciprocal argument range proof on arithmetic circuits. If err is nil then proof is valid.
+// Use empty FiatShamirEngine for call.
+func VerifyRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, proof *ReciprocalProof) error {
 	fs.AddPoint(V)
 
 	e := fs.GetChallenge()
