@@ -19,6 +19,14 @@ func zeroVector(n int) []*big.Int {
 	return res
 }
 
+func oneVector(n int) []*big.Int {
+	res := make([]*big.Int, n)
+	for i := range res {
+		res[i] = big.NewInt(1)
+	}
+	return res
+}
+
 func vectorAdd(a []*big.Int, b []*big.Int) []*big.Int {
 	for len(a) < len(b) {
 		a = append(a, bint(0))
@@ -153,6 +161,15 @@ func e(v *big.Int, a int) []*big.Int {
 	for i := range res {
 		res[i] = val
 		val = mul(val, v)
+	}
+
+	return res
+}
+
+func hadamardMul(a, b []*big.Int) []*big.Int {
+	res := make([]*big.Int, len(a))
+	for i := range res {
+		res[i] = mul(a[i], b[i])
 	}
 
 	return res

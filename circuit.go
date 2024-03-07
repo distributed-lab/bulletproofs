@@ -25,6 +25,10 @@ func VerifyCircuit(public *ArithmeticCircuitPublic, V []*bn256.G1, fs FiatShamir
 	fs.AddPoint(proof.CR)
 	fs.AddPoint(proof.CO)
 
+	for i := range V {
+		fs.AddPoint(V[i])
+	}
+
 	// Generates challenges using Fiat-Shamir heuristic
 	ro := fs.GetChallenge()
 	lambda := fs.GetChallenge()
@@ -147,10 +151,18 @@ func VerifyCircuit(public *ArithmeticCircuitPublic, V []*bn256.G1, fs FiatShamir
 
 // ProveCircuit generates zero knowledge proof that witness satisfies BP++ arithmetic circuit.
 // Use empty FiatShamirEngine for call.
-func ProveCircuit(public *ArithmeticCircuitPublic, fs FiatShamirEngine, private *ArithmeticCircuitPrivate) *ArithmeticCircuitProof {
+func ProveCircuit(public *ArithmeticCircuitPublic, V []*bn256.G1, fs FiatShamirEngine, private *ArithmeticCircuitPrivate) *ArithmeticCircuitProof {
 	ro, rl, no, nl, lo, ll, Co, Cl := commitOL(public, private.Wo, private.Wl)
 
 	rr, nr, lr, Cr := commitR(public, private.Wo, private.Wr)
+
+	fs.AddPoint(Cl)
+	fs.AddPoint(Cr)
+	fs.AddPoint(Co)
+
+	for i := range V {
+		fs.AddPoint(V[i])
+	}
 
 	return innerArithmeticCircuitProve(public, fs, private,
 		[][]*big.Int{rl, rr, ro},
@@ -186,7 +198,7 @@ func commitOL(public *ArithmeticCircuitPublic, wo, wl []*big.Int) (ro []*big.Int
 	}
 
 	ll = make([]*big.Int, public.Nv) // Nv
-	for j := range lo {
+	for j := range ll {
 		ll[j] = big.NewInt(0)
 
 		if i := public.F(PartitionLL, j); i != nil {
@@ -247,10 +259,6 @@ func innerArithmeticCircuitProve(public *ArithmeticCircuitPublic, fs FiatShamirE
 		CO: Co,
 	}
 
-	fs.AddPoint(Cl)
-	fs.AddPoint(Cr)
-	fs.AddPoint(Co)
-
 	// Generates challenges using Fiat-Shamir heuristic
 	rho := fs.GetChallenge()
 	lambda := fs.GetChallenge()
@@ -259,6 +267,15 @@ func innerArithmeticCircuitProve(public *ArithmeticCircuitPublic, fs FiatShamirE
 
 	MlnL, MmnL, MlnR, MmnR := calculateMRL(public)
 	MlnO, MmnO, MllL, MmlL, MllR, MmlR, MllO, MmlO := calculateMO(public)
+
+	// Check M matrix calculated ok
+	Wlw := vectorAdd(matrixMulOnVector(lo, MllO), matrixMulOnVector(no, MlnO))
+	Wlw = vectorAdd(Wlw, vectorAdd(matrixMulOnVector(ll, MllL), matrixMulOnVector(nl, MlnL)))
+	Wlw = vectorAdd(Wlw, vectorAdd(matrixMulOnVector(lr, MllR), matrixMulOnVector(nr, MlnR)))
+
+	Wmw := vectorAdd(matrixMulOnVector(lo, MmlO), matrixMulOnVector(no, MmnO))
+	Wmw = vectorAdd(Wmw, vectorAdd(matrixMulOnVector(ll, MmlL), matrixMulOnVector(nl, MmnL)))
+	Wmw = vectorAdd(Wmw, vectorAdd(matrixMulOnVector(lr, MmlR), matrixMulOnVector(nr, MmnR)))
 
 	mu := mul(rho, rho)
 

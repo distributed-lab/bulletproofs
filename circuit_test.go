@@ -116,7 +116,7 @@ func TestArithmeticCircuit(t *testing.T) {
 		V[i] = public.CommitCircuit(private.V[i], private.Sv[i])
 	}
 
-	proof := ProveCircuit(public, NewKeccakFS(), private)
+	proof := ProveCircuit(public, V, NewKeccakFS(), private)
 	spew.Dump(proof)
 
 	if err := VerifyCircuit(public, V, NewKeccakFS(), proof); err != nil {
@@ -209,7 +209,7 @@ func TestArithmeticCircuit2(t *testing.T) {
 		V[i] = public.CommitCircuit(private.V[i], private.Sv[i])
 	}
 
-	proof := ProveCircuit(public, NewKeccakFS(), private)
+	proof := ProveCircuit(public, V, NewKeccakFS(), private)
 	spew.Dump(proof)
 
 	if err := VerifyCircuit(public, V, NewKeccakFS(), proof); err != nil {
@@ -261,7 +261,7 @@ func TestArithmeticCircuitBinaryRangeProof(t *testing.T) {
 	w := append(wl, wr...)
 	w = append(w, wo...) // w = wl||wl||wo
 
-	wv := make([]*big.Int, 0, Nw)
+	wv := make([]*big.Int, 0, Nv*K)
 	for i := range v {
 		wv = append(wv, v[i]...)
 	}
@@ -337,31 +337,12 @@ func TestArithmeticCircuitBinaryRangeProof(t *testing.T) {
 		V[i] = public.CommitCircuit(private.V[i], private.Sv[i])
 	}
 
-	proof := ProveCircuit(public, NewKeccakFS(), private)
+	proof := ProveCircuit(public, V, NewKeccakFS(), private)
 	spew.Dump(proof)
 
 	if err := VerifyCircuit(public, V, NewKeccakFS(), proof); err != nil {
 		panic(err)
 	}
-}
-
-func matrixMulOnVector(a []*big.Int, m [][]*big.Int) []*big.Int {
-	var res []*big.Int
-
-	for i := 0; i < len(m); i++ {
-		res = append(res, vectorMul(a, m[i]))
-	}
-
-	return res
-}
-
-func hadamardMul(a, b []*big.Int) []*big.Int {
-	res := make([]*big.Int, len(a))
-	for i := range res {
-		res[i] = mul(a[i], b[i])
-	}
-
-	return res
 }
 
 func frac(a, b int) *big.Int {
