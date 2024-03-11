@@ -5,6 +5,7 @@
 package bulletproofs
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"math/big"
 	"testing"
 )
@@ -12,8 +13,10 @@ import (
 func TestReciprocalRangeProofUInt64(t *testing.T) {
 	// uint64 in 16-base system will be encoded in 8 digits
 
-	// 0x0450f4ba
+	// 0xab4f0540
 	digits := []*big.Int{bint(0), bint(4), bint(5), bint(0), bint(15), bint(4), bint(11), bint(10)}
+
+	x := bint(0xab4f0540)
 
 	// Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity
 	m := []*big.Int{
@@ -43,23 +46,28 @@ func TestReciprocalRangeProofUInt64(t *testing.T) {
 	public := &ReciprocalPublic{
 		G:     wnlaPublic.G,
 		GVec:  wnlaPublic.GVec[:Nd],
-		HVec:  wnlaPublic.HVec[:2*Nd+Np+9],
+		HVec:  wnlaPublic.HVec[:2*Nd+Np+1+9],
 		Nd:    Nd,
 		Np:    Np,
 		GVec_: wnlaPublic.GVec[Nd:],
-		HVec_: wnlaPublic.HVec[2*Nd+Np+9:],
+		HVec_: wnlaPublic.HVec[2*Nd+Np+1+9:],
 	}
 
 	private := &ReciprocalPrivate{
-		V:  append(digits, m...),
-		Sv: MustRandScalar(),
+		X:      x,
+		M:      m,
+		Digits: digits,
+		Sm:     MustRandScalar(),
+		Sr:     MustRandScalar(),
+		Sx:     MustRandScalar(),
 	}
 
-	V := public.CommitCircuit(private.V, private.Sv)
+	VCom := public.CommitValue(private.X, private.Sx)
 
-	proof := ProveRange(public, V, NewKeccakFS(), private)
+	proof := ProveRange(public, NewKeccakFS(), private)
+	spew.Dump(proof)
 
-	if err := VerifyRange(public, V, NewKeccakFS(), proof); err != nil {
+	if err := VerifyRange(public, VCom, NewKeccakFS(), proof); err != nil {
 		panic(err)
 	}
 }

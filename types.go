@@ -9,11 +9,15 @@ import (
 	"math/big"
 )
 
+// ReciprocalPublic dimensions:
+// Nd - count of private proles (size of committed value), Np - count of public poles (number system base).
+// Nm = Nd, No = Np
+// Nv = 1 + 2*Nd + Np
 type ReciprocalPublic struct {
 	G      *bn256.G1
-	GVec   []*bn256.G1 // Nm = Nd
-	HVec   []*bn256.G1 // Nv+9 = 2*Nd + Np + 9
-	Nd, Np int         // Nd - count of private proles, Np - count of public poles, Nd = Nm, Np = No
+	GVec   []*bn256.G1 // Nm
+	HVec   []*bn256.G1 // Nv+9
+	Nd, Np int
 
 	// Vectors of points that will be used in WNLA protocol
 	GVec_ []*bn256.G1 // 2^n - Nm
@@ -21,13 +25,16 @@ type ReciprocalPublic struct {
 }
 
 type ReciprocalPrivate struct {
-	V  []*big.Int // Nd + Np
-	Sv *big.Int
+	X          *big.Int
+	M          []*big.Int
+	Digits     []*big.Int
+	Sx, Sm, Sr *big.Int
 }
 
 type ReciprocalProof struct {
 	*ArithmeticCircuitProof
-	V *bn256.G1 // Np + Np + Nd
+	MCom *bn256.G1
+	RCom *bn256.G1
 }
 
 type PartitionType int

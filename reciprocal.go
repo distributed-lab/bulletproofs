@@ -18,41 +18,56 @@ func (p *ReciprocalPublic) CommitCircuit(v []*big.Int, s *big.Int) *bn256.G1 {
 	return res
 }
 
+func (p *ReciprocalPublic) CommitValue(v *big.Int, s *big.Int) *bn256.G1 {
+	res := new(bn256.G1).ScalarMult(p.G, v)
+	res.Add(res, new(bn256.G1).ScalarMult(p.HVec[0], s))
+	return res
+}
+
+func (p *ReciprocalPublic) CommitWitness(d, m []*big.Int, s *big.Int) *bn256.G1 {
+	res := new(bn256.G1).ScalarMult(p.HVec[0], s)
+	res.Add(res, vectorPointScalarMul(p.HVec[9:], append(d, m...)))
+	return res
+}
+
+func (p *ReciprocalPublic) CommitPoles(r []*big.Int, s *big.Int) *bn256.G1 {
+	res := new(bn256.G1).ScalarMult(p.HVec[0], s)
+	res.Add(res, vectorPointScalarMul(p.HVec[9+p.Nd+p.Np:], r))
+	return res
+}
+
 // ProveRange generates zero knowledge proof that corresponding to the committed digits vector value lies in [0, 2^n) range.
 // Use empty FiatShamirEngine for call.
-func ProveRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, private *ReciprocalPrivate) *ReciprocalProof {
-	fs.AddPoint(V)
+func ProveRange(public *ReciprocalPublic, fs FiatShamirEngine, private *ReciprocalPrivate) *ReciprocalProof {
+	vCom := public.CommitValue(private.X, private.Sx)
+	mCom := public.CommitWitness(private.Digits, private.M, private.Sm)
+
+	fs.AddPoint(new(bn256.G1).Add(vCom, mCom))
 
 	e := fs.GetChallenge()
 
 	Nm := public.Nd
 	No := public.Np
 
-	Nv := public.Nd + public.Nd + public.Np
+	Nv := public.Nd + public.Nd + public.Np + 1
 	Nl := Nv
 	Nw := public.Nd + public.Nd + public.Np
 
-	d := make([]*big.Int, public.Nd)
-	for j := range d {
-		d[j] = private.V[j]
-	}
-
 	r := make([]*big.Int, public.Nd)
 	for j := range r {
-		r[j] = inv(add(d[j], e))
+		r[j] = inv(add(private.Digits[j], e))
 	}
 
-	m := make([]*big.Int, public.Np)
-	for j := range m {
-		m[j] = private.V[public.Nd+j]
-	}
+	rCom := public.CommitPoles(r, private.Sr)
 
-	v := append(d, r...) // Nv
-	v = append(v, m...)
+	v := []*big.Int{private.X}
+	v = append(v, private.Digits...)
+	v = append(v, private.M...)
+	v = append(v, r...)
 
-	wL := d
+	wL := private.Digits
 	wR := r
-	wO := m
+	wO := private.M
 
 	am := oneVector(Nm)
 	Wm := zeroMatrix(Nm, Nw)
@@ -64,28 +79,37 @@ func ProveRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, priv
 	al := zeroVector(Nl)
 	Wl := zeroMatrix(Nl, Nw)
 
+	// v
+	base := bint(public.Np)
 	for i := 0; i < Nm; i++ {
-		Wl[i][i] = bint(-1)
+		Wl[0][i] = minus(pow(base, i))
 	}
 
+	// d
+	for i := 0; i < Nm; i++ {
+		Wl[i+1][i] = bint(-1)
+	}
+
+	// m
+	for i := 0; i < No; i++ {
+		Wl[i+Nm+1][i+2*Nm] = bint(-1)
+	}
+
+	// r
 	for i := 0; i < Nm; i++ {
 		for j := 0; j < Nm; j++ {
-			Wl[i+Nm][j+Nm] = bint(1)
+			Wl[i+Nm+No+1][j+Nm] = bint(1)
 		}
 	}
 
 	for i := 0; i < Nm; i++ {
-		Wl[i+Nm][i+Nm] = bint(0)
+		Wl[i+Nm+No+1][i+Nm] = bint(0)
 	}
 
 	for i := 0; i < Nm; i++ {
 		for j := 0; j < No; j++ {
-			Wl[i+Nm][j+2*Nm] = minus(inv(add(e, bint(j))))
+			Wl[i+Nm+No+1][j+2*Nm] = minus(inv(add(e, bint(j))))
 		}
-	}
-
-	for i := 0; i < No; i++ {
-		Wl[i+2*Nm][i+2*Nm] = bint(-1)
 	}
 
 	circuit := &ArithmeticCircuitPublic{
@@ -117,31 +141,33 @@ func ProveRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, priv
 
 	prv := &ArithmeticCircuitPrivate{
 		V:  [][]*big.Int{v},
-		Sv: []*big.Int{private.Sv},
+		Sv: []*big.Int{add(add(private.Sm, private.Sx), private.Sr)},
 		Wl: wL,
 		Wr: wR,
 		Wo: wO,
 	}
 
-	V_ := circuit.CommitCircuit(v, private.Sv)
+	V := circuit.CommitCircuit(prv.V[0], prv.Sv[0])
 
 	return &ReciprocalProof{
-		ArithmeticCircuitProof: ProveCircuit(circuit, []*bn256.G1{V_}, fs, prv),
-		V:                      V_,
+		ArithmeticCircuitProof: ProveCircuit(circuit, []*bn256.G1{V}, fs, prv),
+		MCom:                   mCom,
+		RCom:                   rCom,
 	}
 }
 
 // VerifyRange verifies BP++ reciprocal argument range proof on arithmetic circuits. If err is nil then proof is valid.
 // Use empty FiatShamirEngine for call.
-func VerifyRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, proof *ReciprocalProof) error {
-	fs.AddPoint(V)
+func VerifyRange(public *ReciprocalPublic, VCom *bn256.G1, fs FiatShamirEngine, proof *ReciprocalProof) error {
+	VMCom := new(bn256.G1).Add(VCom, proof.MCom)
+	fs.AddPoint(VMCom)
 
 	e := fs.GetChallenge()
 
 	Nm := public.Nd
 	No := public.Np
 
-	Nv := public.Nd + public.Nd + public.Np
+	Nv := public.Nd + public.Nd + public.Np + 1
 	Nl := Nv
 	Nw := public.Nd + public.Nd + public.Np
 
@@ -155,28 +181,37 @@ func VerifyRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, pro
 	al := zeroVector(Nl)
 	Wl := zeroMatrix(Nl, Nw)
 
+	// v
+	base := bint(16)
 	for i := 0; i < Nm; i++ {
-		Wl[i][i] = bint(-1)
+		Wl[0][i] = minus(pow(base, i))
 	}
 
+	// d
+	for i := 0; i < Nm; i++ {
+		Wl[i+1][i] = bint(-1)
+	}
+
+	// m
+	for i := 0; i < No; i++ {
+		Wl[i+Nm+1][i+2*Nm] = bint(-1)
+	}
+
+	// r
 	for i := 0; i < Nm; i++ {
 		for j := 0; j < Nm; j++ {
-			Wl[i+Nm][j+Nm] = bint(1)
+			Wl[i+Nm+No+1][j+Nm] = bint(1)
 		}
 	}
 
 	for i := 0; i < Nm; i++ {
-		Wl[i+Nm][i+Nm] = bint(0)
+		Wl[i+Nm+No+1][i+Nm] = bint(0)
 	}
 
 	for i := 0; i < Nm; i++ {
 		for j := 0; j < No; j++ {
-			Wl[i+Nm][j+2*Nm] = minus(inv(add(e, bint(j))))
+			Wl[i+Nm+No+1][j+2*Nm] = minus(inv(add(e, bint(j))))
 		}
-	}
-
-	for i := 0; i < No; i++ {
-		Wl[i+2*Nm][i+2*Nm] = bint(-1)
 	}
 
 	circuit := &ArithmeticCircuitPublic{
@@ -206,46 +241,5 @@ func VerifyRange(public *ReciprocalPublic, V *bn256.G1, fs FiatShamirEngine, pro
 		HVec_: public.HVec_,
 	}
 
-	return VerifyCircuit(circuit, []*bn256.G1{proof.V}, fs, proof.ArithmeticCircuitProof)
+	return VerifyCircuit(circuit, []*bn256.G1{new(bn256.G1).Add(VMCom, proof.RCom)}, fs, proof.ArithmeticCircuitProof)
 }
-
-//wl_ := append(private.Wd, private.Wl...) // Np + Nm
-//wo_ := private.Wo
-//
-//ro, rl, no, nl, lo, ll, Co, Cl := commitOL(public.ArithmeticCircuitPublic, wo_, wl_)
-//
-//fs.AddPoint(Cl)
-//fs.AddPoint(Co)
-//
-//alpha := fs.GetChallenge()
-//
-//wi := append(private.Wo, private.Wl...) // No + Nm + Np
-//wi = append(wi, private.Wd...)
-//
-//wv := make([]*big.Int, 0, public.Nw)
-//for i := range private.V {
-//	wv = append(wv, private.V[i]...)
-//}
-//
-//wp_ := make([]*big.Int, public.Np)
-//for i := range wp_ {
-//	wpi := vectorMul(public.Wn[i], wi)
-//	wpi = add(wpi, mul(bbool(public.Fm), wv[i]))
-//	wpi = add(wpi, public.An[i])
-//	wpi = mul(wpi, inv(add(alpha, private.Wd[i])))
-//}
-//
-//wr_ := append(wp_, private.Wr...) // Np + Nm
-//
-//rr, nr, lr, Cr := commitR(public.ArithmeticCircuitPublic, wo_, wr_)
-//fs.AddPoint(Cr)
-//
-//w := append(private.Wl, private.Wr...)
-//w = append(w, private.Wo...)
-//
-//Wdwi := matrixMulOnVector(wi, public.Wd)
-//Wpw := matrixMulOnVector(w, public.WpX(alpha))
-//Wlw := matrixMulOnVector(w, public.Wl)
-//
-//Wl_w_ := append(Wdwi, Wpw...)
-//Wl_w_ = append(Wl_w_, Wlw...)
