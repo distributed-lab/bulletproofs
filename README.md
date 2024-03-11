@@ -34,7 +34,7 @@ func main() {
   // The 16 base is selected as the most optimal base for this case.
 
   // Our private value is 0xab4f0540. Let's encode it as a list of digits:
-  digits := []*big.Int{bint(0), bint(4), bint(5), bint(0), bint(15), bint(4), bint(11), bint(10)}
+  digits := []*big.Int{big.NewInt(0), big.NewInt(4), big.NewInt(5), big.NewInt(0), big.NewInt(15), big.NewInt(4), big.NewInt(11), big.NewInt(10)}
   
   x := big.NewInt(0xab4f0540)
 
@@ -79,7 +79,7 @@ func main() {
     HVec_: HVec[2*Nd+Np+10:],
   }
 
-  private := &ReciprocalPrivate{
+  private := &bulletproofs.ReciprocalPrivate{
     X:      x, // Committed value
     M:      m, // Corresponding multiplicities
     Digits: digits, // Corresponding digits
@@ -89,11 +89,10 @@ func main() {
   VCom := public.CommitValue(private.X, private.Sx) // Value commitment: x*G + Sx*H
 
   // Use NewKeccakFS or your own implementation for the Fiat-Shamir heuristics.
-  proof := ProveRange(public, NewKeccakFS(), private)
-  spew.Dump(proof)
+  proof := bulletproofs.ProveRange(public, bulletproofs.NewKeccakFS(), private)
 
   // If err is nil -> proof is valid.
-  if err := VerifyRange(public, VCom, NewKeccakFS(), proof); err != nil {
+  if err := bulletproofs.VerifyRange(public, VCom, bulletproofs.NewKeccakFS(), proof); err != nil {
     panic(err)
   }
 }
