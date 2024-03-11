@@ -9,15 +9,6 @@ import (
 	"math/big"
 )
 
-// CommitCircuit creates a commitment for v vector and blinding s.
-// Com = v[0]*G + s*H[0] + <v[1:], H[9:]>
-func (p *ReciprocalPublic) CommitCircuit(v []*big.Int, s *big.Int) *bn256.G1 {
-	res := new(bn256.G1).ScalarMult(p.G, v[0])
-	res.Add(res, new(bn256.G1).ScalarMult(p.HVec[0], s))
-	res.Add(res, vectorPointScalarMul(p.HVec[9:], v[1:]))
-	return res
-}
-
 func (p *ReciprocalPublic) CommitValue(v *big.Int, s *big.Int) *bn256.G1 {
 	res := new(bn256.G1).ScalarMult(p.G, v)
 	res.Add(res, new(bn256.G1).ScalarMult(p.HVec[0], s))
@@ -39,8 +30,10 @@ func (p *ReciprocalPublic) CommitPoles(r []*big.Int, s *big.Int) *bn256.G1 {
 // ProveRange generates zero knowledge proof that corresponding to the committed digits vector value lies in [0, 2^n) range.
 // Use empty FiatShamirEngine for call.
 func ProveRange(public *ReciprocalPublic, fs FiatShamirEngine, private *ReciprocalPrivate) *ReciprocalProof {
-	vCom := public.CommitValue(private.X, private.Sx)
-	mCom := public.CommitWitness(private.Digits, private.M, private.Sm)
+	vCom := public.CommitValue(private.X, private.S)
+
+	mBlind := MustRandScalar()
+	mCom := public.CommitWitness(private.Digits, private.M, mBlind)
 
 	fs.AddPoint(new(bn256.G1).Add(vCom, mCom))
 
@@ -58,7 +51,8 @@ func ProveRange(public *ReciprocalPublic, fs FiatShamirEngine, private *Reciproc
 		r[j] = inv(add(private.Digits[j], e))
 	}
 
-	rCom := public.CommitPoles(r, private.Sr)
+	rBlind := MustRandScalar()
+	rCom := public.CommitPoles(r, rBlind)
 
 	v := []*big.Int{private.X}
 	v = append(v, private.Digits...)
@@ -141,7 +135,7 @@ func ProveRange(public *ReciprocalPublic, fs FiatShamirEngine, private *Reciproc
 
 	prv := &ArithmeticCircuitPrivate{
 		V:  [][]*big.Int{v},
-		Sv: []*big.Int{add(add(private.Sm, private.Sx), private.Sr)},
+		Sv: []*big.Int{add(add(mBlind, private.S), rBlind)},
 		Wl: wL,
 		Wr: wR,
 		Wo: wO,

@@ -33,8 +33,10 @@ func main() {
   // The uint64 in 16-base system will be encoded in 8 digits.
   // The 16 base is selected as the most optimal base for this case.
 
-  // Our private value is 0x0450f4ba. Lets encode it as a list of digits:
-  digits := []*big.Int{big.NewInt(0), big.NewInt(4), big.NewInt(5), big.NewInt(0), big.NewInt(15), big.NewInt(4), big.NewInt(11), big.NewInt(10)}
+  // Our private value is 0xab4f0540. Let's encode it as a list of digits:
+  digits := []*big.Int{bint(0), bint(4), bint(5), bint(0), bint(15), bint(4), bint(11), bint(10)}
+  
+  x := big.NewInt(0xab4f0540)
 
   // Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity (the count of 'i-digit' in digits list) 
   m := []*big.Int{
@@ -61,34 +63,37 @@ func main() {
 
   var G *bn256.G1
   // Length of our base points vector should be a power ot 2 to be used in WNLA protocol. 
-  // So cause the real HVec size in circuit is `2*Nd+Np+9` the nearest length is 64   
+  // So cause the real HVec size in circuit is `2*Nd+Np+10` the nearest length is 64   
   var GVec []*bn256.G1 // len = 8
   var HVec []*bn256.G1 // len = 64
 
   public := &bulletproofs.ReciprocalPublic{
     G:     G,
     GVec:  GVec[:Nd],
-    HVec:  HVec[:2*Nd+Np+9],
+    HVec:  HVec[:2*Nd+Np+10],
     Nd:    Nd,
     Np:    Np,
 	
 	// Remaining points that will be used in WNLA protocol
     GVec_: GVec[Nd:], 
-    HVec_: HVec[2*Nd+Np+9:],
+    HVec_: HVec[2*Nd+Np+10:],
   }
 
-  private := &bulletproofs.ReciprocalPrivate{
-    V:  append(digits, m...),
-    Sv: MustRandScalar(), // Random blinding scalar for our commitment
+  private := &ReciprocalPrivate{
+    X:      x, // Committed value
+    M:      m, // Corresponding multiplicities
+    Digits: digits, // Corresponding digits
+    S:     MustRandScalar(), // Blinding value (secret) used for committing value as: x*G + Sx*H
   }
-  
-  V := public.CommitCircuit(private.V, private.Sv) // Digits and multiplicities commitment
+
+  VCom := public.CommitValue(private.X, private.Sx) // Value commitment: x*G + Sx*H
 
   // Use NewKeccakFS or your own implementation for the Fiat-Shamir heuristics.
-  proof := bulletproofs.ProveRange(public, V, bulletproofs.NewKeccakFS(), private)   
-  
+  proof := ProveRange(public, NewKeccakFS(), private)
+  spew.Dump(proof)
+
   // If err is nil -> proof is valid.
-  if err := bulletproofs.VerifyRange(public, V, bulletproofs.NewKeccakFS(), proof); err != nil {
+  if err := VerifyRange(public, VCom, NewKeccakFS(), proof); err != nil {
     panic(err)
   }
 }

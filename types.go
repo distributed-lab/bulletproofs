@@ -13,6 +13,7 @@ import (
 // Nd - count of private proles (size of committed value), Np - count of public poles (number system base).
 // Nm = Nd, No = Np
 // Nv = 1 + 2*Nd + Np
+// G and HVec[0] will be used for the value commitment: VCom = value*G + blinding*HVec[0]
 type ReciprocalPublic struct {
 	G      *bn256.G1
 	GVec   []*bn256.G1 // Nm
@@ -25,10 +26,10 @@ type ReciprocalPublic struct {
 }
 
 type ReciprocalPrivate struct {
-	X          *big.Int
-	M          []*big.Int
-	Digits     []*big.Int
-	Sx, Sm, Sr *big.Int
+	X      *big.Int // Committed value
+	M      []*big.Int
+	Digits []*big.Int
+	S      *big.Int // Blinding value (secret)
 }
 
 type ReciprocalProof struct {

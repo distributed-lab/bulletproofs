@@ -57,12 +57,10 @@ func TestReciprocalRangeProofUInt64(t *testing.T) {
 		X:      x,
 		M:      m,
 		Digits: digits,
-		Sm:     MustRandScalar(),
-		Sr:     MustRandScalar(),
-		Sx:     MustRandScalar(),
+		S:      MustRandScalar(),
 	}
 
-	VCom := public.CommitValue(private.X, private.Sx)
+	VCom := public.CommitValue(private.X, private.S)
 
 	proof := ProveRange(public, NewKeccakFS(), private)
 	spew.Dump(proof)
