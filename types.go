@@ -34,8 +34,7 @@ type ReciprocalPrivate struct {
 
 type ReciprocalProof struct {
 	*ArithmeticCircuitProof
-	MCom *bn256.G1
-	RCom *bn256.G1
+	V *bn256.G1
 }
 
 type PartitionType int

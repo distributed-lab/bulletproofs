@@ -30,53 +30,53 @@ import (
 )
 
 func main() {
-  // The uint64 in 16-base system will be encoded in 8 digits.
+  // The uint64 in 16-base system will be encoded in 16 digits.
   // The 16 base is selected as the most optimal base for this case.
 
-  // Our private value is 0xab4f0540. Let's encode it as a list of digits:
-  digits := []*big.Int{big.NewInt(0), big.NewInt(4), big.NewInt(5), big.NewInt(0), big.NewInt(15), big.NewInt(4), big.NewInt(11), big.NewInt(10)}
-  
-  x := big.NewInt(0xab4f0540)
+  // Our private value is 0xab4f0540ab4f0540. Let's encode it as a list of digits:
+  digits := []*big.Int{big.NewInt(0), big.NewInt(4), big.NewInt(5), big.NewInt(0), big.NewInt(15), big.NewInt(4), big.NewInt(11), big.NewInt(10), big.NewInt(0), big.NewInt(4), big.NewInt(5), big.NewInt(0), big.NewInt(15), big.NewInt(4), big.NewInt(11), big.NewInt(10)}
 
-  // Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity (the count of 'i-digit' in digits list) 
+  x, _ := new(big.Int).SetString("ab4f0540ab4f0540", 16)
+
+  // Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity (the count of 'i-digit' in digits list)
   m := []*big.Int{
-    big.NewInt(2), // 0
+    big.NewInt(4), // 0
     big.NewInt(0), // 1
     big.NewInt(0), // 2
     big.NewInt(0), // 3
-    big.NewInt(2), // 4
-    big.NewInt(1), // 5
+    big.NewInt(4), // 4
+    big.NewInt(2), // 5
     big.NewInt(0), // 6
     big.NewInt(0), // 7
     big.NewInt(0), // 8
     big.NewInt(0), // 9
-    big.NewInt(1), // 10
-    big.NewInt(1), // 11
+    big.NewInt(2), // 10
+    big.NewInt(2), // 11
     big.NewInt(0), // 12
     big.NewInt(0), // 13
     big.NewInt(0), // 14
-    big.NewInt(1), // 15
+    big.NewInt(2), // 15
   }
 
-  Nd := 8  // digits size
+  Nd := 16  // digits size
   Np := 16 // base size
 
   var G *bn256.G1
   // Length of our base points vector should be a power ot 2 to be used in WNLA protocol. 
-  // So cause the real HVec size in circuit is `2*Nd+Np+10` the nearest length is 64   
+  // So cause the real HVec size in circuit is `Nd+10` the nearest length is 32   
   var GVec []*bn256.G1 // len = 8
-  var HVec []*bn256.G1 // len = 64
+  var HVec []*bn256.G1 // len = 32
 
   public := &bulletproofs.ReciprocalPublic{
     G:     G,
     GVec:  GVec[:Nd],
-    HVec:  HVec[:2*Nd+Np+10],
+    HVec:  HVec[:Nd+10],
     Nd:    Nd,
     Np:    Np,
 	
 	// Remaining points that will be used in WNLA protocol
     GVec_: GVec[Nd:], 
-    HVec_: HVec[2*Nd+Np+10:],
+    HVec_: HVec[Nd+10:],
   }
 
   private := &bulletproofs.ReciprocalPrivate{

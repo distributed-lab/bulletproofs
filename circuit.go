@@ -268,15 +268,6 @@ func innerArithmeticCircuitProve(public *ArithmeticCircuitPublic, fs FiatShamirE
 	MlnL, MmnL, MlnR, MmnR := calculateMRL(public)
 	MlnO, MmnO, MllL, MmlL, MllR, MmlR, MllO, MmlO := calculateMO(public)
 
-	// Check M matrix calculated ok
-	Wlw := vectorAdd(matrixMulOnVector(lo, MllO), matrixMulOnVector(no, MlnO))
-	Wlw = vectorAdd(Wlw, vectorAdd(matrixMulOnVector(ll, MllL), matrixMulOnVector(nl, MlnL)))
-	Wlw = vectorAdd(Wlw, vectorAdd(matrixMulOnVector(lr, MllR), matrixMulOnVector(nr, MlnR)))
-
-	Wmw := vectorAdd(matrixMulOnVector(lo, MmlO), matrixMulOnVector(no, MmnO))
-	Wmw = vectorAdd(Wmw, vectorAdd(matrixMulOnVector(ll, MmlL), matrixMulOnVector(nl, MmnL)))
-	Wmw = vectorAdd(Wmw, vectorAdd(matrixMulOnVector(lr, MmlR), matrixMulOnVector(nr, MmnR)))
-
 	mu := mul(rho, rho)
 
 	// Calculate lambda vector (nl == nv * k)
