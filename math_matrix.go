@@ -6,6 +6,17 @@ package bulletproofs
 
 import "math/big"
 
+func zeroMatrix(n, m int) [][]*big.Int {
+	res := make([][]*big.Int, n)
+	for i := range res {
+		res[i] = make([]*big.Int, m)
+		for j := range res[i] {
+			res[i][j] = bint(0)
+		}
+	}
+	return res
+}
+
 func diagInv(x *big.Int, n int) [][]*big.Int {
 	var res [][]*big.Int = make([][]*big.Int, n)
 	inv := inv(x)
@@ -38,6 +49,16 @@ func vectorMulOnMatrix(a []*big.Int, m [][]*big.Int) []*big.Int {
 		}
 
 		res = append(res, vectorMul(a, column))
+	}
+
+	return res
+}
+
+func matrixMulOnVector(a []*big.Int, m [][]*big.Int) []*big.Int {
+	var res []*big.Int
+
+	for i := 0; i < len(m); i++ {
+		res = append(res, vectorMul(a, m[i]))
 	}
 
 	return res

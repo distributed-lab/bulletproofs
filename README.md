@@ -2,18 +2,104 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Example
+## Abstract
+
+Present Go library contains the implementation of Bulletproofs++ weight norm linear argument protocol, arithmetic circuit
+protocol and reciprocal range proof protocol.
 
 Explore the [circuit_test.go](./circuit_test.go) to check the examples of circuit prove and verification.
 It contains several circuits:
 
-- Prove that we know such `p` and `q` that `p*q=r` for some public `r`. This example is presented in the BP form and
-  translated into the BP++ form according to our paper.
 - Prove that we know such `x, y` that `x+y=r` and `x*y=z` for public `r, z`. This example encoded directly into the BP++
   circuits.
-- Prove the range for 4-bits value: `x` is in `[0..2^n)` range.
+- Prove the range for 4-bits value: `x` is in `[0..2^n)` range (simple binary range proof).
 
-## Weight norm linear argument
+Also, [reciprocal_test.go](./reciprocal_test.go) contains example of proving that value lies in [0, 2^n) range.
+
+## Reciprocal range proofs
+
+Check the following snippet as an example of usage of range proof protocol:
+
+```go
+package main
+
+import (
+  "github.com/cloudflare/bn256"
+  "github.com/distributed-lab/bulletproofs"
+  "math/big"
+)
+
+func main() {
+  // The uint64 in 16-base system will be encoded in 8 digits.
+  // The 16 base is selected as the most optimal base for this case.
+
+  // Our private value is 0xab4f0540. Let's encode it as a list of digits:
+  digits := []*big.Int{big.NewInt(0), big.NewInt(4), big.NewInt(5), big.NewInt(0), big.NewInt(15), big.NewInt(4), big.NewInt(11), big.NewInt(10)}
+  
+  x := big.NewInt(0xab4f0540)
+
+  // Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity (the count of 'i-digit' in digits list) 
+  m := []*big.Int{
+    big.NewInt(2), // 0
+    big.NewInt(0), // 1
+    big.NewInt(0), // 2
+    big.NewInt(0), // 3
+    big.NewInt(2), // 4
+    big.NewInt(1), // 5
+    big.NewInt(0), // 6
+    big.NewInt(0), // 7
+    big.NewInt(0), // 8
+    big.NewInt(0), // 9
+    big.NewInt(1), // 10
+    big.NewInt(1), // 11
+    big.NewInt(0), // 12
+    big.NewInt(0), // 13
+    big.NewInt(0), // 14
+    big.NewInt(1), // 15
+  }
+
+  Nd := 8  // digits size
+  Np := 16 // base size
+
+  var G *bn256.G1
+  // Length of our base points vector should be a power ot 2 to be used in WNLA protocol. 
+  // So cause the real HVec size in circuit is `2*Nd+Np+10` the nearest length is 64   
+  var GVec []*bn256.G1 // len = 8
+  var HVec []*bn256.G1 // len = 64
+
+  public := &bulletproofs.ReciprocalPublic{
+    G:     G,
+    GVec:  GVec[:Nd],
+    HVec:  HVec[:2*Nd+Np+10],
+    Nd:    Nd,
+    Np:    Np,
+	
+	// Remaining points that will be used in WNLA protocol
+    GVec_: GVec[Nd:], 
+    HVec_: HVec[2*Nd+Np+10:],
+  }
+
+  private := &bulletproofs.ReciprocalPrivate{
+    X:      x, // Committed value
+    M:      m, // Corresponding multiplicities
+    Digits: digits, // Corresponding digits
+    S:     MustRandScalar(), // Blinding value (secret) used for committing value as: x*G + Sx*H
+  }
+
+  VCom := public.CommitValue(private.X, private.Sx) // Value commitment: x*G + Sx*H
+
+  // Use NewKeccakFS or your own implementation for the Fiat-Shamir heuristics.
+  proof := bulletproofs.ProveRange(public, bulletproofs.NewKeccakFS(), private)
+
+  // If err is nil -> proof is valid.
+  if err := bulletproofs.VerifyRange(public, VCom, bulletproofs.NewKeccakFS(), proof); err != nil {
+    panic(err)
+  }
+}
+
+```
+
+## Weight norm linear argument (WNLA)
 
 The [wnla.go](./wnla.go) contains the implementation of **weight norm linear argument** protocol. This is a fundamental
 basis for arithmetic circuit protocol. It uses the Fiat-Shamir heuristics from [fs.go](./fs.go) to generate challenges

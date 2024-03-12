@@ -9,6 +9,35 @@ import (
 	"math/big"
 )
 
+// ReciprocalPublic dimensions:
+// Nd - count of private proles (size of committed value), Np - count of public poles (number system base).
+// Nm = Nd, No = Np
+// Nv = 1 + 2*Nd + Np
+// G and HVec[0] will be used for the value commitment: VCom = value*G + blinding*HVec[0]
+type ReciprocalPublic struct {
+	G      *bn256.G1
+	GVec   []*bn256.G1 // Nm
+	HVec   []*bn256.G1 // Nv+9
+	Nd, Np int
+
+	// Vectors of points that will be used in WNLA protocol
+	GVec_ []*bn256.G1 // 2^n - Nm
+	HVec_ []*bn256.G1 // 2^n - (Nv+9)
+}
+
+type ReciprocalPrivate struct {
+	X      *big.Int // Committed value
+	M      []*big.Int
+	Digits []*big.Int
+	S      *big.Int // Blinding value (secret)
+}
+
+type ReciprocalProof struct {
+	*ArithmeticCircuitProof
+	MCom *bn256.G1
+	RCom *bn256.G1
+}
+
 type PartitionType int
 
 const (
