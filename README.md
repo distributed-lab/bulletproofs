@@ -24,63 +24,62 @@ Check the following snippet as an example of usage of range proof protocol:
 package main
 
 import (
-	"github.com/cloudflare/bn256"
-	"github.com/distributed-lab/bulletproofs"
-	"math/big"
+  "github.com/cloudflare/bn256"
+  "github.com/distributed-lab/bulletproofs"
+  "math/big"
 )
 
 func main() {
-	// The uint64 in 16-base system will be encoded in 16 digits. 
-	// The 16 base is selected as the most optimal base for this case.
-	
-	// Our private value is 0xab4f0540ab4f0540. 
-	x := uint64(0xab4f0540ab4f0540)
-	X := new(big.Int).SetUint64(x)
-	
-    // Let's encode it as a list of digits:
-    digits := bulletproofs.UInt64Hex(x) // [0 4 5 0 15 4 11 10 0 4 5 0 15 4 11 10]
-	
-	
-	// Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity (the count of 'i-digit' in digits list)
-	m := bulletproofs.HexMapping(digits) // [4 0 0 0 4 2 0 0 0 0 2 2 0 0 0 2]
+  // The uint64 in 16-base system will be encoded in 16 digits. 
+  // The 16 base is selected as the most optimal base for this case.
 
-	Nd := 16 // digits size
-	Np := 16 // base size
+  // Our private value is 0xab4f0540ab4f0540. 
+  x := uint64(0xab4f0540ab4f0540)
+  X := new(big.Int).SetUint64(x)
 
-	var G *bn256.G1
-	// Length of our base points vector should be a power ot 2 to be used in WNLA protocol. 
-	// So cause the real HVec size in circuit is `Nd+10` the nearest length is 32   
-	var GVec []*bn256.G1 // len = 8
-	var HVec []*bn256.G1 // len = 32
+  // Let's encode it as a list of digits:
+  digits := bulletproofs.UInt64Hex(x) // [0 4 5 0 15 4 11 10 0 4 5 0 15 4 11 10]
 
-	public := &bulletproofs.ReciprocalPublic{
-		G:    G,
-		GVec: GVec[:Nd],
-		HVec: HVec[:Nd+10],
-		Nd:   Nd,
-		Np:   Np,
+  // Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity (the count of 'i-digit' in digits list)
+  m := bulletproofs.HexMapping(digits) // [4 0 0 0 4 2 0 0 0 0 2 2 0 0 0 2]
 
-		// Remaining points that will be used in WNLA protocol
-		GVec_: GVec[Nd:],
-		HVec_: HVec[Nd+10:],
-	}
+  Nd := 16 // digits size
+  Np := 16 // base size
 
-	private := &bulletproofs.ReciprocalPrivate{
-		X:      x,                // Committed value
-		M:      m,                // Corresponding multiplicities
-		Digits: digits,           // Corresponding digits
-		S:      MustRandScalar(), // Blinding value (secret) used for committing value as: x*G + Sx*H
-	}
+  var G *bn256.G1
+  // Length of our base points vector should be a power ot 2 to be used in WNLA protocol. 
+  // So cause the real HVec size in circuit is `Nd+10` the nearest length is 32   
+  var GVec []*bn256.G1 // len = 8
+  var HVec []*bn256.G1 // len = 32
 
-	VCom := public.CommitValue(private.X, private.Sx) // Value commitment: x*G + Sx*H
+  public := &bulletproofs.ReciprocalPublic{
+    G:    G,
+    GVec: GVec[:Nd],
+    HVec: HVec[:Nd+10],
+    Nd:   Nd,
+    Np:   Np,
 
-	// Use NewKeccakFS or your own implementation for the Fiat-Shamir heuristics.
-	proof := bulletproofs.ProveRange(public, bulletproofs.NewKeccakFS(), private)
+    // Remaining points that will be used in WNLA protocol
+    GVec_: GVec[Nd:],
+    HVec_: HVec[Nd+10:],
+  }
 
-	// If err is nil -> proof is valid.
-	if err := bulletproofs.VerifyRange(public, VCom, bulletproofs.NewKeccakFS(), proof); err != nil {
-		panic(err)
-	}
+  private := &bulletproofs.ReciprocalPrivate{
+    X:      x,                // Committed value
+    M:      m,                // Corresponding multiplicities
+    Digits: digits,           // Corresponding digits
+    S:      MustRandScalar(), // Blinding value (secret) used for committing value as: x*G + Sx*H
+  }
+
+  VCom := public.CommitValue(private.X, private.Sx) // Value commitment: x*G + Sx*H
+
+  // Use NewKeccakFS or your own implementation for the Fiat-Shamir heuristics.
+  proof := bulletproofs.ProveRange(public, bulletproofs.NewKeccakFS(), private)
+
+  // If err is nil -> proof is valid.
+  if err := bulletproofs.VerifyRange(public, VCom, bulletproofs.NewKeccakFS(), proof); err != nil {
+    panic(err)
+  }
 }
 
 ```
