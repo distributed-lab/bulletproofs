@@ -13,30 +13,13 @@ import (
 func TestReciprocalRangeProofUInt64(t *testing.T) {
 	// uint64 in 16-base system will be encoded in 16 digits
 
-	// 0xab4f0540ab4f0540
-	digits := []*big.Int{bint(0), bint(4), bint(5), bint(0), bint(15), bint(4), bint(11), bint(10), bint(0), bint(4), bint(5), bint(0), bint(15), bint(4), bint(11), bint(10)}
+	x := uint64(0xab4f0540ab4f0540)
+	X := new(big.Int).SetUint64(x)
 
-	x, _ := new(big.Int).SetString("ab4f0540ab4f0540", 16)
+	digits := UInt64Hex(x) // 16
 
 	// Public poles multiplicities i-th element corresponds to the 'i-digit' multiplicity
-	m := []*big.Int{
-		bint(4), // 0
-		bint(0), // 1
-		bint(0), // 2
-		bint(0), // 3
-		bint(4), // 4
-		bint(2), // 5
-		bint(0), // 6
-		bint(0), // 7
-		bint(0), // 8
-		bint(0), // 9
-		bint(2), // 10
-		bint(2), // 11
-		bint(0), // 12
-		bint(0), // 13
-		bint(0), // 14
-		bint(2), // 15
-	}
+	m := HexMapping(digits) // 16
 
 	Nd := 16 // digits size
 	Np := 16 // base size
@@ -54,7 +37,7 @@ func TestReciprocalRangeProofUInt64(t *testing.T) {
 	}
 
 	private := &ReciprocalPrivate{
-		X:      x,
+		X:      X,
 		M:      m,
 		Digits: digits,
 		S:      MustRandScalar(),

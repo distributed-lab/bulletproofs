@@ -12,7 +12,7 @@ import (
 // ReciprocalPublic dimensions:
 // Nd - count of private proles (size of committed value), Np - count of public poles (number system base).
 // Nm = Nd, No = Np
-// Nv = 1 + 2*Nd + Np
+// Nv = 1 + Nd
 // G and HVec[0] will be used for the value commitment: VCom = value*G + blinding*HVec[0]
 type ReciprocalPublic struct {
 	G      *bn256.G1
