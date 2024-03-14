@@ -49,7 +49,7 @@ func main() {
   var G *bn256.G1
   // Length of our base points vector should be a power ot 2 to be used in WNLA protocol. 
   // So cause the real HVec size in circuit is `Nd+10` the nearest length is 32   
-  var GVec []*bn256.G1 // len = 8
+  var GVec []*bn256.G1 // len = 16
   var HVec []*bn256.G1 // len = 32
 
   public := &bulletproofs.ReciprocalPublic{
