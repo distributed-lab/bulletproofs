@@ -43,10 +43,10 @@ func TestArithmeticCircuit(t *testing.T) {
 
 	Wl := [][]*big.Int{
 		{bint(0), bint(1), bint(0), bint(0)},
-		{bint(1), bint(0), bint(0), bint(-1)},
+		{bint(0), bint(-1), bint(1), bint(0)},
 	} // Nl*Nw
 
-	Al := []*big.Int{minus(r), bint(0)} // Nl
+	Al := []*big.Int{minus(r), minus(z)} // Nl
 
 	fmt.Println("Circuit check:", vectorMul(Wm[0], w), "=", vectorMul(wl, wr))
 	fmt.Println("Circuit check:", vectorAdd(vectorAdd([]*big.Int{vectorMul(Wl[0], w), vectorMul(Wl[1], w)}, wv), Al), "= 0")
