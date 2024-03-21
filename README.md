@@ -16,6 +16,16 @@ It contains several circuits:
 
 Also, [reciprocal_test.go](./reciprocal_test.go) contains example of proving that value lies in [0, 16^n) range.
 
+Implemented protocol has 2G points advantage over existing BP and BP+ protocols on proving of one 64-bit value and this
+advantage will increase for more values per proof.
+
+| Protocol | G | F |
+|---------- |---- |--- |
+| BP | 16 | 5 |
+| BP+ | 15 | 3 |
+| Our BP++ | 13 | 3 |
+
+
 ## Reciprocal range proofs
 
 Check the following snippet as an example of usage of range proof protocol:
