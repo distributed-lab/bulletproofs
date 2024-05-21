@@ -2,6 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+⚠️ __Please note - this crypto library has not been audited, so use it at your own risk.__
+
 ## Abstract
 
 Present Go library contains the implementation of Bulletproofs++ weight norm linear argument protocol, arithmetic circuit
